@@ -67,10 +67,31 @@ async function run() {
       next();
     };
 
+    // menu related API
     app.get("/api/v1/get-menu", async (req, res) => {
       const result = await menuCollection.find().toArray();
       res.send(result);
     });
+
+    app.post(
+      "/api/v1/create/menu",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const menu = req.body;
+        const result = await menuCollection.insertOne(menu);
+        res.send(result);
+      }
+    );
+
+    app.delete("/api/v1/delete/:id", async (req, res) => {
+      const { id } = req.params;
+      const query = { _id: new ObjectId(id) };
+      const result = await menuCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // review related API
 
     app.get("/api/v1/get-review", async (req, res) => {
       const result = await reviewCollection.find().toArray();
