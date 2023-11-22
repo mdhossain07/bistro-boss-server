@@ -1,7 +1,8 @@
+require("dotenv").config();
 const express = require("express");
 const app = express();
 const jwt = require("jsonwebtoken");
-require("dotenv").config();
+const stripe = require("stripe")(process.env.SECRET_KEY);
 const cors = require("cors");
 const port = process.env.PORT || 5001;
 
@@ -27,6 +28,7 @@ async function run() {
     const reviewCollection = client.db("bistroDB").collection("reviews");
     const cartCollection = client.db("bistroDB").collection("carts");
     const userCollection = client.db("bistroDB").collection("users");
+    const paymentCollection = client.db("bistroDB").collection("payments");
 
     // jwt related API
 
@@ -180,6 +182,44 @@ async function run() {
         res.send(result);
       }
     );
+
+    // payment API
+
+    app.post("/api/v1/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price) * 100 || 1;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    app.get("/api/v1/get-payments/:email", async (req, res) => {
+      const { email } = req.params;
+      console.log(email);
+      const query = { email: email };
+      // console.log(query);
+      const result = await paymentCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.post("/api/v1/payments", async (req, res) => {
+      const payment = req.body;
+      const paymentResult = await paymentCollection.insertOne(payment);
+
+      const query = {
+        _id: {
+          $in: payment.cartIds.map((id) => new ObjectId(id)),
+        },
+      };
+      const result = await cartCollection.deleteMany(query);
+      res.send({ paymentResult, result });
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
