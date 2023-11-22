@@ -22,7 +22,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const menuCollection = client.db("bistroDB").collection("menu");
     const reviewCollection = client.db("bistroDB").collection("reviews");
@@ -141,6 +141,7 @@ async function run() {
     });
 
     app.get("/api/v1/users/admin/:email", verifyToken, async (req, res) => {
+      console.log("hello");
       const { email } = req.params;
       if (email !== req.decoded?.email) {
         return res.status(403).send({ message: "forbidden access" });
@@ -199,9 +200,10 @@ async function run() {
       });
     });
 
-    app.get("/api/v1/get-payments/:email", async (req, res) => {
-      const { email } = req.params;
-      console.log(email);
+    app.get("/api/v1/get-payments", async (req, res) => {
+      const { email } = req.query;
+      console.log(req.query);
+      // console.log(email);
       const query = { email: email };
       // console.log(query);
       const result = await paymentCollection.find(query).toArray();
@@ -287,10 +289,10 @@ async function run() {
       res.send(result);
     });
 
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
